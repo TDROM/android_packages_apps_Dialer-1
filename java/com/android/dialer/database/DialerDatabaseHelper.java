@@ -34,6 +34,7 @@ import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract.Directory;
 import android.support.annotation.VisibleForTesting;
+import com.android.dialer.util.HanziToPinyin;
 import android.support.annotation.WorkerThread;
 import android.text.TextUtils;
 import com.android.contacts.common.R;
@@ -45,6 +46,7 @@ import com.android.dialer.smartdial.SmartDialPrefix;
 import com.android.dialer.util.PermissionsUtil;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
@@ -552,7 +554,7 @@ public class DialerDatabaseHelper extends SQLiteOpenHelper {
    * @param nameCursor Cursor pointing to the list of distinct updated contacts.
    */
   @VisibleForTesting
-  void insertNamePrefixes(SQLiteDatabase db, Cursor nameCursor) {
+  void insertNamePrefixes(SQLiteDatabase db, Cursor nameCursor/*, boolean isCN*/) {
     final int columnIndexName = nameCursor.getColumnIndex(SmartDialDbColumns.DISPLAY_NAME_PRIMARY);
     final int columnIndexContactId = nameCursor.getColumnIndex(SmartDialDbColumns.CONTACT_ID);
 
@@ -570,9 +572,27 @@ public class DialerDatabaseHelper extends SQLiteOpenHelper {
       final SQLiteStatement insert = db.compileStatement(sqlInsert);
 
       while (nameCursor.moveToNext()) {
+                char c[] = nameCursor.getString(columnIndexName).toCharArray();
+                String tmp = new String();
+
+                for (int i = 0; i < c.length; i++) {
+		    if (HanziToPinyin.getInstance().isChineseWords(String.valueOf(c[i]))) {
+                        String pinyin = HanziToPinyin.getInstance().getFullPinYin(
+                                String.valueOf(c[i]));
+                        tmp += pinyin.toLowerCase(Locale.ENGLISH);
+                        /**
+                         *Add a " " to make pinyin words like English
+                         *like 张三 to pinyin Zhang San
+                         *As English John Smith to John Smith
+                         */
+                        tmp += " ";
+                    } else {
+                         tmp += String.valueOf(c[i]);
+                    }
+               }
         /** Computes a list of prefixes of a given contact name. */
         final ArrayList<String> namePrefixes =
-            SmartDialPrefix.generateNamePrefixes(nameCursor.getString(columnIndexName));
+            SmartDialPrefix.generateNamePrefixes(tmp);
 
         for (String namePrefix : namePrefixes) {
           insert.bindLong(1, nameCursor.getLong(columnIndexContactId));
@@ -906,7 +926,7 @@ public class DialerDatabaseHelper extends SQLiteOpenHelper {
         /**
          * If the contact has either the name or number that matches the query, add to the result.
          */
-        final boolean nameMatches = nameMatcher.matches(displayName);
+        final boolean nameMatches = true;//nameMatcher.matches(displayName);
         final boolean numberMatches = (nameMatcher.matchesNumber(phoneNumber, query) != null);
         if (nameMatches || numberMatches) {
           /** If a contact has not been added, add it to the result and the hash set. */
