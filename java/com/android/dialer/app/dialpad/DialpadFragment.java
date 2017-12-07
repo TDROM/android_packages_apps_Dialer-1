@@ -96,6 +96,8 @@ import com.android.dialer.util.PermissionsUtil;
 import java.util.HashSet;
 import java.util.List;
 
+import com.sudamod.sdk.phonelocation.PhoneUtil;
+
 /** Fragment that displays a twelve-key phone dialpad. */
 public class DialpadFragment extends Fragment
     implements View.OnClickListener,
@@ -144,6 +146,7 @@ public class DialpadFragment extends Fragment
   private OnDialpadQueryChangedListener mDialpadQueryListener;
   private DialpadView mDialpadView;
   private EditText mDigits;
+  private TextView mLocation;
   private int mDialpadSlideInDuration;
   /** Remembers if we need to clear digits field when the screen is completely gone. */
   private boolean mClearDigitsOnStop;
@@ -316,7 +319,13 @@ public class DialpadFragment extends Fragment
     }
 
     if (mDialpadQueryListener != null) {
-      mDialpadQueryListener.onDialpadQueryChanged(mDigits.getText().toString());
+      String number = mDigits.getText().toString();
+      mDialpadQueryListener.onDialpadQueryChanged(number);
+      if (number.length() >= 3) {
+        mLocation.setText(PhoneUtil.getPhoneUtil(getActivity()).getLocalNumberInfo(number));
+      } else {
+        mLocation.setText("");
+      }
     }
 
     updateDeleteButtonEnabledState();
@@ -370,6 +379,7 @@ public class DialpadFragment extends Fragment
     mDigits.setOnLongClickListener(this);
     mDigits.addTextChangedListener(this);
     mDigits.setElegantTextHeight(false);
+    mLocation = mDialpadView.getLocation();
 
     PhoneNumberFormattingTextWatcher watcher =
         new PhoneNumberFormattingTextWatcher(GeoUtil.getCurrentCountryIso(getActivity()));
@@ -1053,6 +1063,9 @@ public class DialpadFragment extends Fragment
   public void clearDialpad() {
     if (mDigits != null) {
       mDigits.getText().clear();
+    }
+    if (mLocation != null) {
+      mLocation.setText("");
     }
   }
 

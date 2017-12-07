@@ -303,6 +303,8 @@ LOCAL_STATIC_JAVA_LIBRARIES := \
 	volley
 
 LOCAL_STATIC_JAVA_LIBRARIES += libSudaPinYin
+LOCAL_STATIC_JAVA_LIBRARIES += libSudaSdk
+
 LOCAL_STATIC_ANDROID_LIBRARIES := \
 	android-support-design \
 	android-support-transition \
